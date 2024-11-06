@@ -113,7 +113,7 @@ async def check_reminders(bot: Bot) -> None:
                 day = filtered_days[0]
                 if not (
                         couples := list(filter(
-                            lambda x: x.start.timestamp() >= (datetime.now() - timedelta(minutes=120)).timestamp(),
+                            lambda x: x.start.timestamp() >= datetime.now().timestamp(),
                             day.couples
                         ))
                 ):
@@ -138,7 +138,7 @@ async def check_reminders(bot: Bot) -> None:
                         asyncio.create_task(launch_start_task(user, bot))
 
                     if (
-                            # couple.start.timestamp() - datetime.now().timestamp() < 60 * 4
+                            couple.start.timestamp() - datetime.now().timestamp() < 60 * 2
                             not reminders.couple_start
                     ):
                         asyncio.create_task(couple_start_task(user, couple, bot))
