@@ -15,7 +15,6 @@ from routers.start import start_router
 from utils import env
 from utils.services.database import init_database
 
-
 async def main() -> None:
     dp = Dispatcher()
     dp.include_routers(

@@ -52,7 +52,7 @@ async def get_group_id_handler(message: Message, state: FSMContext) -> None:
     matcher = GROUP_KAB.match(message.text)
 
     group_id: Optional[int] = None
-    if not ((group_id := matcher.group(1)) if matcher else False):
+    if not ((group_id := int(matcher.group(1))) if matcher else False):
         await message.answer(
             "🚫 \\| Указала неверная ссылка\\!",
             reply_markup=InlineKeyboardMarkup(

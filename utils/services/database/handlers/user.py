@@ -65,25 +65,32 @@ class UserTools:
         return saved_groups[:]
 
     @classmethod
-    async def update_groups(cls, tg_id: int, groups: list[int], remove_groups: list[int] = None,
-                            set_group: int = None) -> User:
+    async def update_groups(
+            cls,
+            tg_id: int,
+            groups: list[int] = None,
+            remove_groups: list[int] = None,
+            set_group: int = None
+    ) -> User:
         async with async_session() as session, session.begin():
             result = (await session.execute(
-                select(User).where(User.tg_id == tg_id)
+                select(User).where(User.tg_id == tg_id)  # type: ignore
             )).scalar_one()
 
             saved_groups: list[int] = ast.literal_eval(result.saved_groups)
-            saved_groups.extend(groups)
+            if groups:
+                saved_groups.extend(groups)
+
             if remove_groups:
                 for del_group in remove_groups:
                     saved_groups.remove(del_group)
 
             new = await session.execute(
                 update(User)
-                .where(User.tg_id == tg_id)
+                .where(User.tg_id == tg_id)  # type: ignore
                 .values(
                     saved_groups=str(saved_groups),
-                    group_id=set_group if saved_groups else result.group_id
+                    group_id=set_group if set_group else result.group_id
                 )
                 .execution_options(synchronize_session="fetch")
                 .returning(User)

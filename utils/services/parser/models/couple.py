@@ -50,7 +50,7 @@ class Couple:
             "is_active": self.start <= datetime.now() <= self.end,
 
             "name": self.discipline,
-            "description": "Empty",
+            "description": "",
             "teacher": self.short_lecturer,
             "audience": str(self.classroom),
 
@@ -102,3 +102,14 @@ class Couple:
             text_couple += f"\n☕ Обед *{launch_time}*"
 
         return text_couple
+
+    def __repr__(self) -> str:
+        return (
+            f"Couple<"
+            f"number={self.number}, "
+            f"discipline={self.discipline}, "
+            f"classroom={self.full_classroom}, "
+            f"start={self.start.strftime("%H:%M")}, "
+            f"end={self.end.strftime("%H:%M")}"
+            f">"
+        )

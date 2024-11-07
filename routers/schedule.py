@@ -9,6 +9,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, Message
 
 from utils.basic import COUPLE_COUNT_ICONS, DAY_ICONS, DAY_TYPES, MONTH_TYPES
+from utils.basic.time import now
 from utils.filters.is_registered import IsRegistered
 from utils.keybords.main_menu import SCHEDULE
 from utils.services.database.handlers import UserTools
@@ -85,6 +86,7 @@ async def schedule_base(callback: CallbackQuery, number: int, sdate: str = None)
                 inline_keyboard=inline_keyboard
             ) if inline_keyboard else None
         )
+    await callback.answer()
 
 
 @schedule_router.callback_query(ScheduleCallback.filter(F.date and F.number))
@@ -99,7 +101,7 @@ async def generate_schedule_markup(days: list[Day]) -> InlineKeyboardMarkup:
                  f"{i.day_of_week.capitalize()} "
                  f"{i.date.strftime("%d.%m")} "
                  f"{COUPLE_COUNT_ICONS[len(i.couples)]}"
-                 + (" (Сегодня)" if i.date.day == datetime.now().day else ""),
+                 + (" (Сегодня)" if i.date.day == now().day else ""),
             callback_data=ScheduleCallback(
                 date=datetime.fromisoformat(i.raw["start_date"]).strftime("%Y-%m-%d"),
                 number=i.day_of_week_number

@@ -1,9 +1,9 @@
 import asyncio
-from datetime import datetime, timedelta
 
 from aiogram import Bot, Router, F
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
+from utils.basic.time import now
 from utils.filters.is_registered import IsRegistered
 from utils.services.database.handlers import UserTools, RemindersTools
 from utils.services.database.models import User
@@ -49,11 +49,18 @@ async def disable_event_task(user: User, **kwargs) -> None:
 
 
 async def start_event_task(user: User, day: Day, bot: Bot) -> None:
-    await bot.send_message(
-        chat_id=user.tg_id,
-        text="🗓️ \\| *Пары на этот день\\!*\n\n"
-             + f"\n\n".join([i.generate_str() for i in day.couples])
-    )
+    if user.theme != "text" and (media := await DrawService.draw_schedule(day, user)):
+        await bot.send_photo(
+            chat_id=user.tg_id,
+            photo=media,
+            caption=f"🗓️ \\| *Пары на этот день\\!*\n\n"
+        )
+    else:
+        await bot.send_message(
+            chat_id=user.tg_id,
+            text="🗓️ \\| *Пары на этот день\\!*\n\n"
+                 + f"\n\n".join([i.generate_str() for i in day.couples])
+        )
     await RemindersTools.update_reminders(
         tg_id=user.tg_id,
         start_event=True
@@ -69,6 +76,7 @@ async def couple_start_task(user: User, couple: Couple, bot: Bot) -> None:
         )
     else:
         await bot.send_message(
+            chat_id=user.tg_id,
             text="✨ \\| *Скоро начнется пара\\!*\n\n" + couple.generate_str()
         )
 
@@ -76,7 +84,7 @@ async def couple_start_task(user: User, couple: Couple, bot: Bot) -> None:
         tg_id=user.tg_id,
         couple_start=True
     )
-    asyncio.create_task(disable_event_task(user, couple_start=True))
+    asyncio.create_task(disable_event_task(user, couple_start=False))
 
 
 async def launch_start_task(user: User, bot: Bot) -> None:
@@ -88,61 +96,60 @@ async def launch_start_task(user: User, bot: Bot) -> None:
         tg_id=user.tg_id,
         launch_start=True
     )
-    asyncio.create_task(disable_event_task(user, launch_start=True))
+
+
+async def remind_user(user: User, bot: Bot) -> None:
+    if days := await MgutmTools.get_schedule(user.group_id):
+        reminders = await RemindersTools.get_reminders(user.tg_id)
+        if not (filtered_days := list(filter(lambda x: x.date.day == now().day, days))):
+            return
+
+        day: Day = filtered_days[0]
+        first_couple: Couple = day.couples[0]
+        if (
+                not reminders.start_event
+                and first_couple.start.timestamp() - now().timestamp() <= 60 * 2
+        ):
+            asyncio.create_task(start_event_task(user, day, bot))
+
+        if not (
+                couples := list(filter(
+                    lambda x: x.end.timestamp() >= now().timestamp(),
+                    day.couples
+                ))
+        ):
+            return
+
+        couple: Couple = couples[0]
+        start_launch, _ = couple.calculate_launch()
+        if (
+                not reminders.launch_start
+                and couple.number == 3
+                and start_launch.timestamp() - now().timestamp() <= 60 * 2
+        ):
+            asyncio.create_task(launch_start_task(user, bot))
+
+        if (
+                not reminders.couple_start
+                and couple.start.timestamp() - now().timestamp() <= 60 * 2
+        ):
+            asyncio.create_task(couple_start_task(user, couple, bot))
 
 
 async def check_reminders(bot: Bot) -> None:
     truncated = False
 
     while True:
-        if datetime.now().hour == 1 and not truncated:
+        if now().hour == 1 and not truncated:
             try:
                 await RemindersTools.truncate_reminders()
             finally:
                 truncated = True
         else:
-            if datetime.now().hour != 1:
+            if now().hour != 1:
                 truncated = False
 
         for user in await UserTools.get_if_reminded():
-            if days := await MgutmTools.get_schedule(user.group_id):
-                reminders = await RemindersTools.get_reminders(user.tg_id)
-                if not (filtered_days := list(filter(lambda x: x.date.day == datetime.now().day, days))):
-                    continue
-
-                day = filtered_days[0]
-                if not (
-                        couples := list(filter(
-                            lambda x: x.start.timestamp() >= datetime.now().timestamp(),
-                            day.couples
-                        ))
-                ):
-                    continue
-
-                first_couple: Couple = day.couples[0]
-                if (
-                        not reminders.start_event
-                        and datetime.now().hour == first_couple.start.hour
-                        and (first_couple.start.minute - 2) <= datetime.now().minute <= first_couple.start.minute
-                ):
-                    asyncio.create_task(start_event_task(user, day, bot))
-
-                for couple in couples:
-                    start_launch, _ = couple.calculate_launch()
-                    if (
-                            couple.number == 3
-                            and not reminders.launch_start
-                            and datetime.now().hour == start_launch.hour
-                            and (start_launch.minute - 2) <= datetime.now().minute <= start_launch.minute
-                    ):
-                        asyncio.create_task(launch_start_task(user, bot))
-
-                    if (
-                            couple.start.timestamp() - datetime.now().timestamp() < 60 * 2
-                            and not reminders.couple_start
-                    ):
-                        asyncio.create_task(couple_start_task(user, couple, bot))
-
-                    break
+            asyncio.create_task(remind_user(user, bot))
 
         await asyncio.sleep(30)
