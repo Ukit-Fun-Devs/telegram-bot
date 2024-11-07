@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto, Message
 from sqlalchemy import insert
 
 from utils.basic import GROUP_KAB
@@ -15,9 +13,6 @@ from utils.keybords.authorize import AUTHORIZE
 from utils.services.database import async_session
 from utils.services.database.models import User
 from utils.states import RegistrationState
-
-if TYPE_CHECKING:
-    from aiogram.types import Message
 
 authorize_router = Router()
 
