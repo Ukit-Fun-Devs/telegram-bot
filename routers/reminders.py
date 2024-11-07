@@ -139,7 +139,7 @@ async def check_reminders(bot: Bot) -> None:
 
                     if (
                             couple.start.timestamp() - datetime.now().timestamp() < 60 * 2
-                            not reminders.couple_start
+                            and not reminders.couple_start
                     ):
                         asyncio.create_task(couple_start_task(user, couple, bot))
 
