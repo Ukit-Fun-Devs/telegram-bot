@@ -15,11 +15,11 @@ if TYPE_CHECKING:
 __all__ = (
     "IsRegistered",
     "IsNotRegistered",
-    "_check_registered",
+    "check_registered",
 )
 
 
-async def _check_registered(message: Message | CallbackQuery) -> bool:
+async def check_registered(message: Message | CallbackQuery) -> bool:
     if isinstance(message, CallbackQuery):
         message = message.message
 
@@ -37,11 +37,11 @@ class IsRegistered(Filter):
     key = 'is_registered'
 
     async def __call__(self, message: Message | CallbackQuery) -> bool:
-        return await _check_registered(message)
+        return await check_registered(message)
 
 
 class IsNotRegistered(Filter):
     key = 'is_not_registered'
 
     async def __call__(self, message: Message | CallbackQuery) -> bool:
-        return not (await _check_registered(message))
+        return not (await check_registered(message))

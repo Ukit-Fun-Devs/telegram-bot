@@ -9,7 +9,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from sqlalchemy import insert
 
 from utils.basic import GROUP_KAB
-from utils.filters.is_registered import IsNotRegistered, _check_registered
+from utils.filters.is_registered import IsNotRegistered, check_registered
 from utils.keybords import MAIN_MENU_KEYBOARD
 from utils.keybords.authorize import AUTHORIZE
 from utils.services.database import async_session
@@ -95,7 +95,7 @@ async def tutorial_step_3(callback: CallbackQuery) -> None:
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton(text="▶️ Начать регистрацию!", callback_data="start_registration")]
-            ] if not _check_registered(callback.message) else [
+            ] if not await check_registered(callback.message) else [
                 [InlineKeyboardButton(text="💖 Добавить группу", callback_data="add-group-start")]
             ]
         )
@@ -164,9 +164,7 @@ async def registration_step_4(message: Message, state: FSMContext) -> None:
 @authorize_router.callback_query(F.data == "registration-step-5", IsNotRegistered())
 @authorize_router.message(RegistrationState.third_name, IsNotRegistered())
 async def registration_step_5(message: Message | CallbackQuery, state: FSMContext) -> None:
-    if isinstance(message, CallbackQuery):
-        message = message.message
-    else:
+    if isinstance(message, Message):
         await state.update_data(third_name=message.text)
 
     message = (await state.get_data())["message"]

@@ -48,7 +48,9 @@ async def settings_handler(message: Message) -> None:
 @menu_router.message(F.text == INFO, IsRegistered())
 async def info_handler(message: Message) -> None:
     user: User = await UserTools.get(message.chat.id)
-    info = await MgutmTools.get_info(user.group_id)
+    if not (info := await MgutmTools.get_info(user.group_id)):
+        await message.answer("🚫 \\| Ошибка получения информации о группе")
+        return
 
     await message.answer(
         f"👥 Группа №*{info.text_id}*\n\n"
