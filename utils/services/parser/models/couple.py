@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 import pytz
@@ -16,6 +17,7 @@ DISCIPLINE_TYPE_ICONS = {
 
 class Couple:
     ZONE = pytz.timezone('Europe/Moscow')
+    PATTERN = re.compile(r"(?:лек|пр\.|лаб) (?P<text>[А-Яа-я\s\d]+)(?:, п/г \d)?")
 
     def __init__(self, data: dict[str, str]) -> None:
         self.raw = data
@@ -35,12 +37,7 @@ class Couple:
             data["фиоПреподавателя"]
             .replace("преп. СПО", "")
         )
-        self.discipline: str = (
-            data["дисциплина"]
-            .replace("пр. ", "")
-            .replace("лек ", "")
-            .replace("лаб ", "")
-        )
+        self.discipline: str = self.PATTERN.search(data["дисциплина"]).group("text")
         self.type: DisciplineType = DisciplineType(data["дисциплина"][:3])
 
         self.start: datetime = datetime.fromisoformat(data["датаНачала"]).replace(tzinfo=self.ZONE)

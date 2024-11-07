@@ -26,8 +26,11 @@ class Day:
         self.type: int = int(couple["типНедели"])
         self.couples: list[Couple] = []
 
+        seen_numbers = set()
         for couple_data in data:
-            self.couples.append(Couple(couple_data))
+            if couple_data["номерЗанятия"] not in seen_numbers:
+                self.couples.append(Couple(couple_data))
+                seen_numbers.add(couple_data["номерЗанятия"])
 
     def deserialize(self) -> DayType:
         return {
