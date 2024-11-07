@@ -1,10 +1,10 @@
 from collections import defaultdict
-from datetime import datetime
 from typing import Optional
 
 from aiohttp import ClientSession
 
 from .models import Day, GroupInfo
+from ...basic.time import now
 
 
 class MgutmTools:
@@ -24,7 +24,7 @@ class MgutmTools:
                 f"https://dec.mgutm.ru/api/Rasp",
                 data={
                     "idGroup": str(group_id),
-                    "sdate": sdate if sdate else datetime.now().strftime("%Y-%m-%d")
+                    "sdate": sdate if sdate else now().strftime("%Y-%m-%d")
                 }
         ) as response:
             if response.status != 200:

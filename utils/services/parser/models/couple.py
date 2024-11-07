@@ -1,5 +1,7 @@
 from datetime import datetime
 
+import pytz
+
 from utils.basic import DISCIPLINE_ICONS, COUPLE_COUNT_ICONS
 from utils.basic.time import now
 from utils.services.parser.models.enums import Hull, DisciplineType
@@ -13,6 +15,8 @@ DISCIPLINE_TYPE_ICONS = {
 
 
 class Couple:
+    ZONE = pytz.timezone('Europe/Moscow')
+
     def __init__(self, data: dict[str, str]) -> None:
         self.raw = data
 
@@ -39,8 +43,8 @@ class Couple:
         )
         self.type: DisciplineType = DisciplineType(data["дисциплина"][:3])
 
-        self.start: datetime = datetime.fromisoformat(data["датаНачала"])
-        self.end: datetime = datetime.fromisoformat(data["датаОкончания"])
+        self.start: datetime = datetime.fromisoformat(data["датаНачала"]).replace(tzinfo=self.ZONE)
+        self.end: datetime = datetime.fromisoformat(data["датаОкончания"]).replace(tzinfo=self.ZONE)
 
     def deserialize(self) -> CoupleType:
         return {
@@ -86,8 +90,8 @@ class Couple:
     @classmethod
     def _convert_time_range_to_tuple(cls, _st: str, _et) -> tuple[datetime, datetime]:
         today = datetime.today().date()
-        start_time = datetime.combine(today, datetime.strptime(_st, "%H:%M").time())
-        end_time = datetime.combine(today, datetime.strptime(_et, "%H:%M").time())
+        start_time = datetime.combine(today, datetime.strptime(_st, "%H:%M").time()).replace(tzinfo=cls.ZONE)
+        end_time = datetime.combine(today, datetime.strptime(_et, "%H:%M").time()).replace(tzinfo=cls.ZONE)
 
         return start_time, end_time
 
