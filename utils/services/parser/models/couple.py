@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from utils.basic import DISCIPLINE_ICONS, COUPLE_COUNT_ICONS
+from utils.basic.time import now
 from utils.services.parser.models.enums import Hull, DisciplineType
 from utils.services.parser.models.typed_dict import CoupleType
 
@@ -47,7 +48,7 @@ class Couple:
             "is_launch": self.number == 3,
             "launch_type": self.get_launch_english(),
             "couple_type": self.type.get_english(),
-            "is_active": self.start <= datetime.now() <= self.end,
+            "is_active": self.start <= now() <= self.end,
 
             "name": self.discipline,
             "description": "",
