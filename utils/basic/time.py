@@ -1,6 +1,4 @@
 from datetime import datetime
-import pytz
-
 
 __all__ = (
     "now",
@@ -8,10 +6,9 @@ __all__ = (
 
 
 class CurrentDate:
-    ZONE = pytz.timezone('Europe/Moscow')
 
     def __call__(self, *args, **kwargs) -> datetime:
-        return datetime.now(self.ZONE)
+        return datetime.now()
 
 
 now = CurrentDate()

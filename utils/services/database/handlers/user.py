@@ -100,6 +100,20 @@ class UserTools:
         return user
 
     @classmethod
+    async def clean_saved_groups(cls, tg_id: int) -> User:
+        async with async_session() as session, session.begin():
+            new = await session.execute(
+                update(User)
+                .where(User.tg_id == tg_id)  # type: ignore
+                .values(saved_groups="[]")
+                .execution_options(synchronize_session="fetch")
+                .returning(User)
+            )
+
+            user = new.scalar_one()
+        return user
+
+    @classmethod
     async def set_theme(cls, tg_id: int, theme_key: str) -> None:
         async with async_session() as session, session.begin():
             await session.execute(

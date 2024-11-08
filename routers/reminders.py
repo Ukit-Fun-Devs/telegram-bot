@@ -1,10 +1,12 @@
 import asyncio
+from datetime import timedelta
 
 from aiogram import Bot, Router, F
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.types import CallbackQuery
 
 from utils.basic.time import now
 from utils.filters.is_registered import IsRegistered
+from utils.keybords import DELETE_MESSAGE_MARKUP
 from utils.services.database.handlers import UserTools, RemindersTools
 from utils.services.database.models import User
 from utils.services.draw import DrawService
@@ -21,22 +23,12 @@ async def change_remind_status_handler(callback: CallbackQuery) -> None:
         case False:
             await callback.message.edit_text(
                 "💔 \\| Уведомления успешно выключены",
-                reply_markup=InlineKeyboardMarkup(
-                    inline_keyboard=[[InlineKeyboardButton(
-                        text="🗑️ Удалить сообщение",
-                        callback_data="delete-message"
-                    )]]
-                )
+                reply_markup=DELETE_MESSAGE_MARKUP
             )
         case True:
             await callback.message.edit_text(
                 "🎉 \\| Уведомления успешно включены",
-                reply_markup=InlineKeyboardMarkup(
-                    inline_keyboard=[[InlineKeyboardButton(
-                        text="🗑️ Удалить сообщение",
-                        callback_data="delete-message"
-                    )]]
-                )
+                reply_markup=DELETE_MESSAGE_MARKUP
             )
 
 
@@ -105,10 +97,16 @@ async def remind_user(user: User, bot: Bot) -> None:
             return
 
         day: Day = filtered_days[0]
-        first_couple: Couple = day.couples[0]
+        if not day.couples:
+            return
+
         if (
                 not reminders.start_event
-                and first_couple.start.timestamp() - now().timestamp() <= 60 * 2
+                and 0 <= (
+                        day.couples[0].start.timestamp()
+                        - now().timestamp()
+                        - timedelta(minutes=30).total_seconds()
+                ) <= 60 * 2
         ):
             asyncio.create_task(start_event_task(user, day, bot))
 
@@ -125,13 +123,13 @@ async def remind_user(user: User, bot: Bot) -> None:
         if (
                 not reminders.launch_start
                 and couple.number == 3
-                and start_launch.timestamp() - now().timestamp() <= 60 * 2
+                and 0 <= (start_launch.timestamp() - now().timestamp()) <= 60 * 2
         ):
             asyncio.create_task(launch_start_task(user, bot))
 
         if (
                 not reminders.couple_start
-                and couple.start.timestamp() - now().timestamp() <= 60 * 2
+                and 0 <= (couple.start.timestamp() - now().timestamp()) <= 60 * 2
         ):
             asyncio.create_task(couple_start_task(user, couple, bot))
 

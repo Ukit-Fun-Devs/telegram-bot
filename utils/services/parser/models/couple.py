@@ -1,8 +1,6 @@
 import re
 from datetime import datetime
 
-import pytz
-
 from utils.basic import DISCIPLINE_ICONS, COUPLE_COUNT_ICONS
 from utils.basic.time import now
 from utils.services.parser.models.enums import Hull, DisciplineType
@@ -16,8 +14,7 @@ DISCIPLINE_TYPE_ICONS = {
 
 
 class Couple:
-    ZONE = pytz.timezone('Europe/Moscow')
-    PATTERN = re.compile(r"(?:лек|пр\.|лаб) (?P<text>[А-Яа-я\s\d]+)(?:, п/г \d)?")
+    PATTERN = re.compile(r"(?P<type>лек|пр\.|лаб) (?P<text>[А-Яа-я\s\d]+)(?:, п/г \d)?")
 
     def __init__(self, data: dict[str, str]) -> None:
         self.raw = data
@@ -37,11 +34,13 @@ class Couple:
             data["фиоПреподавателя"]
             .replace("преп. СПО", "")
         )
-        self.discipline: str = self.PATTERN.search(data["дисциплина"]).group("text")
-        self.type: DisciplineType = DisciplineType(data["дисциплина"][:3])
 
-        self.start: datetime = datetime.fromisoformat(data["датаНачала"]).replace(tzinfo=self.ZONE)
-        self.end: datetime = datetime.fromisoformat(data["датаОкончания"]).replace(tzinfo=self.ZONE)
+        searcher = self.PATTERN.search(data["дисциплина"])
+        self.discipline: str = searcher.group("text")
+        self.type: DisciplineType = DisciplineType(searcher.group("type"))
+
+        self.start: datetime = datetime.fromisoformat(data["датаНачала"])
+        self.end: datetime = datetime.fromisoformat(data["датаОкончания"])
 
     def deserialize(self) -> CoupleType:
         return {

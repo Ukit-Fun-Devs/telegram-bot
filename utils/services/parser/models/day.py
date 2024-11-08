@@ -4,22 +4,18 @@ import base64
 import json
 from datetime import datetime, date
 
-import pytz
-
 from utils.basic import DAY_TYPES, MONTH_TYPES
 from .couple import Couple
 from .typed_dict import DayType
 
 
 class Day:
-    ZONE = pytz.timezone("Europe/Moscow")
-
     def __init__(self, data: list[dict[str, str]], **kwargs) -> None:
         self.raw = kwargs.copy()
         self.raw_couples = data
         couple = data[0]
 
-        self.date: date = datetime.fromisoformat(couple["дата"]).replace(tzinfo=self.ZONE)
+        self.date: date = datetime.fromisoformat(couple["дата"])
         self.day_of_week_number: int = int(couple["деньНедели"])
         self.day_of_week: str = couple["день_недели"].lower()
         self.group_id: int = int(couple["кодГруппы"])

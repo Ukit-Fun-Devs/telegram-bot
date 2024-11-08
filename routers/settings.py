@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from random import choice
 from typing import Optional, TYPE_CHECKING
 
@@ -10,6 +11,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 
 from utils.basic import GROUP_KAB
 from utils.filters.is_registered import IsRegistered
+from utils.keybords import DELETE_MESSAGE_MARKUP
 from utils.services.database.handlers import UserTools
 from utils.services.draw import DrawService
 from utils.services.draw.models import Design
@@ -30,6 +32,15 @@ class ChangeGroupCallback(CallbackData, prefix="callback-data-change-group"):
 
 class ChangeThemeCallback(CallbackData, prefix="callback-data-change-theme"):
     theme_id: str
+
+
+@settings_router.callback_query(F.data == "clear-all-saved-groups", IsRegistered())
+async def clear_all_saved_groups_handler(callback: CallbackQuery) -> None:
+    await callback.message.edit_text(
+        "✅ \\| Список сохраненных групп был отчищен\\!",
+        reply_markup=DELETE_MESSAGE_MARKUP
+    )
+    await UserTools.clean_saved_groups(tg_id=callback.from_user.id)
 
 
 @settings_router.callback_query(F.data == "add-group-start", IsRegistered())
@@ -64,7 +75,8 @@ async def get_group_id_handler(message: Message, state: FSMContext) -> None:
         )
         return
 
-    saved_groups = await UserTools.get_groups(message.chat.id)
+    user = await UserTools.get(message.chat.id)
+    saved_groups = ast.literal_eval(user.saved_groups)
     if len(saved_groups) >= 5:
         await message.answer(
             "💔 \\| Максимальное число добавленных групп достигнуто\\!"
@@ -76,9 +88,17 @@ async def get_group_id_handler(message: Message, state: FSMContext) -> None:
             "💔 \\| Данная группа уже находится в твоем списке\\!"
         )
         return
+    if group_id == user.group_id:
+        await message.answer(
+            "💔 \\| Вы уже находитесь в этой группе\\!"
+        )
+        return
 
     await UserTools.update_groups(message.chat.id, [group_id])
-    await message.answer("✅ \\| Группа успешно добавлена\\, теперь ее можно сменить в настройках\\!")
+    await message.answer(
+        "✅ \\| Группа успешно добавлена\\, теперь ее можно сменить в настройках\\!",
+        reply_markup=DELETE_MESSAGE_MARKUP
+    )
 
 
 @settings_router.callback_query(ChangeGroupCallback.filter(F.group_id), IsRegistered())
@@ -91,7 +111,10 @@ async def change_group_callback_handler(callback: CallbackQuery, callback_data: 
         set_group=callback_data.group_id
     )
 
-    await callback.message.edit_text("✅ \\| Группа успешно изменена\\, сменить обратно можно в настройках\\!")
+    await callback.message.edit_text(
+        "✅ \\| Группа успешно изменена\\, сменить обратно можно в настройках\\!",
+        reply_markup=DELETE_MESSAGE_MARKUP
+    )
 
 
 @settings_router.callback_query(F.data == "change-group", IsRegistered())
@@ -104,7 +127,8 @@ async def change_group_handler(callback: CallbackQuery) -> None:
                      f"{info.text_id if (info := (await MgutmTools.get_info(group_id))) else group_id}",
                 callback_data=ChangeGroupCallback(group_id=group_id).pack()
             )] for group_id in await UserTools.get_groups(callback.from_user.id)] + [[
-                InlineKeyboardButton(text="💖 Добавить группу", callback_data="add-group-start")
+                InlineKeyboardButton(text="💖 Добавить группу", callback_data="add-group-start"),
+                InlineKeyboardButton(text="✨ Очистить группы", callback_data="clear-all-saved-groups")
             ]]
         )
     )
@@ -134,7 +158,8 @@ async def selected_design_handler(callback: CallbackQuery, callback_data: Change
         media=InputMediaPhoto(
             media=design.preview,
             caption=f"✅ \\| Дизайн успешно изменен\\! Пример выше\\."
-        )
+        ),
+        reply_markup=DELETE_MESSAGE_MARKUP
     )
 
     await UserTools.set_theme(tg_id=callback.from_user.id, theme_key=design.key)
